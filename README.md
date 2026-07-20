@@ -34,7 +34,6 @@ project/
 │
 ├── views/
 │   ├── index.html
-│   └── result.html
 │
 ├── routes/
 │   └── api.js
@@ -50,43 +49,20 @@ project/
 1. Clone the repository.
 
 ```bash
-git clone https://github.com/yourusername/svg-converter.git
+git clone https://github.com/yourusername/svg.git
 ```
 
 2. Navigate to the project folder.
 
 ```bash
-cd svg-converter
+cd svg
 ```
 
-3. Install dependencies.
+3. Open the application.
+You can run the project by opening:
 
 ```bash
-npm install
-```
-
-4. Create a `.env` file.
-
-```env
-API_KEY=YOUR_SVG_NEW_API_KEY
-```
-
-5. Start the application.
-
-```bash
-npm start
-```
-
-or
-
-```bash
-node app.js
-```
-
-6. Open your browser.
-
-```
-http://localhost:3000
+index.html
 ```
 
 ## How It Works
