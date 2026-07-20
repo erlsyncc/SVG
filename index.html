@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG Vectorizer App</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 700px; margin: 30px auto; padding: 20px; line-height: 1.6; background-color: #fcfcfc; }
+        .card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e1e4e8; margin-bottom: 25px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: #333; }
+        input[type="text"], input[type="file"] { width: 100%; padding: 10px; margin-bottom: 18px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background: #000000; color: white; border: none; padding: 12px 20px; cursor: pointer; border-radius: 4px; font-size: 15px; font-weight: bold; width: 100%; transition: background 0.2s; }
+        button:hover { background: #222222; }
+        button:disabled { background: #cccccc; cursor: not-allowed; }
+        .status { font-weight: bold; margin: 15px 0; padding: 10px; border-radius: 4px; display: none; }
+        .loading { background: #e3f2fd; color: #0d47a1; display: block; }
+        .success { background: #e8f5e9; color: #1b5e20; display: block; }
+        .error { background: #ffebee; color: #c62828; display: block; }
+        #output-container { text-align: center; margin-top: 20px; padding: 15px; background: #f8f9fa; border: 1px dashed #bbb; border-radius: 4px; min-height: 200px; display: flex; align-items: center; justify-content: center; }
+        svg { max-width: 100%; height: auto; max-height: 400px; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>Image to SVG AI Vectorizer</h2>
+        <p style="color: #666; font-size: 14px;">Upload an image file to convert it into scalabled vector artwork using the svg.new API.</p>
+        
+        <label for="api-key">1. Enter Your svg.new API Key:</label>
+        <input type="text" id="api-key" placeholder="svk_your_key_here" required>
+
+        <label for="image-file">2. Choose an Image (PNG, JPG, WEBP):</label>
+        <input type="file" id="image-file" accept="image/*" required>
+
+        <button id="vectorize-btn" disabled>Vectorize Image</button>
+        
+        <div id="status-box" class="status"></div>
+    </div>
+    <div class="card">
+        <h3>✨ Resulting Vector Preview</h3>
+        <div id="output-container">Your converted SVG vector graph will render directly inside this frame.</div>
+    </div>
+
+    <script>
+        const apiKeyInput = document.getElementById('api-key');
+        const fileInput = document.getElementById('image-file');
+        const vectorizeBtn = document.getElementById('vectorize-btn');
+        const statusBox = document.getElementById('status-box');
+        const outputContainer = document.getElementById('output-container');
+
+        fileInput.addEventListener('change', () => {
+            vectorizeBtn.disabled = !fileInput.files.length;
+        });
+
+        function getBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        vectorizeBtn.addEventListener('click', async () => {
+            const apiKey = apiKeyInput.value.trim();
+            if (!apiKey) {
+                alert("Please supply your svg.new API key first.");
+                return;
+            }
+
+            statusBox.className = "status loading";
+            statusBox.innerText = "Processing vector traces via AI... Please wait.";
+            vectorizeBtn.disabled = true;
+            outputContainer.innerHTML = "Processing...";
+
+            try {
+                const file = fileInput.files[0];
+                const base64DataUrl = await getBase64(file);
+
+                const payload = {
+                    image: base64DataUrl
+                };
+
+                const response = await fetch('https://svg.new', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    let errData = {};
+                    try { errData = await response.json(); } catch(e){}
+                    
+                    if (response.status === 401) throw new Error("Unauthorized: Invalid API Key validation failed.");
+                    if (response.status === 402) throw new Error("Payment Required: No remaining Pro plan token credits.");
+                    if (response.status === 429) throw new Error("Rate Limited: Exceeded the 10 requests per minute ceiling.");
+                    throw new Error(errData.error || `Server responded with status code: ${response.status}`);
+                }
+                const result = await response.json();
+                
+                statusBox.className = "status success";
+                statusBox.innerText = "🎉 Vector conversion complete! Rendered below.";
+                
+                if (result.svg) {
+                    outputContainer.innerHTML = result.svg;
+                } else if (result.url) {
+                    outputContainer.innerHTML = `<img src="${result.url}" alt="Vectorized Output"/>`;
+                } else {
+                    outputContainer.innerHTML = "Success, but unknown data schema payload type returned.";
+                    console.log("Raw object response:", result);
+                }
+
+            } catch (error) {
+                statusBox.className = "status error";
+                statusBox.innerText = error.message;
+                outputContainer.innerHTML = "⚠️ Execution process failed.";
+                console.error("Vectorization runtime error structure:", error);
+            } finally {
+                vectorizeBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
